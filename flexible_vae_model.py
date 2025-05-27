@@ -526,7 +526,7 @@ class FlexibleVAETrainer:
             }
             if extra_fea is not None:
                 original['extra_features'] = extra_fea
-            
+            """
             # Calculate loss
             loss_dict = flexible_vae_loss_function(
                 output['reconstructed'], 
@@ -536,6 +536,29 @@ class FlexibleVAETrainer:
                 beta=beta,
                 use_extra_features=self.use_extra_features
             )
+            """
+            if hasattr(self, 'balanced_training') and self.balanced_training:
+                original_inputs = {}
+                if extra_fea is not None:
+                    original_inputs['extra_features'] = extra_fea
+    
+                loss_dict = balanced_vae_loss_function(
+                    output, 
+                    original_inputs, 
+                    beta=beta,
+                    structure_weight=getattr(self, 'structure_weight', 1.0),
+                    feature_weight=getattr(self, 'feature_weight', 1.0))
+            else:
+                original = {'atom_features': [atom_fea[idx] for idx in crystal_atom_idx]}
+                if extra_fea is not None:
+                    original['extra_features'] = extra_fea    
+                loss_dict = flexible_vae_loss_function(
+                    output['reconstructed'], 
+                    original, 
+                    output['mu'], 
+                    output['logvar'], 
+                    beta=beta,
+                    use_extra_features=self.use_extra_features)
             
             # Backward pass
             self.optimizer.zero_grad()
@@ -555,20 +578,27 @@ class FlexibleVAETrainer:
                 total_extra_feat_loss += loss_dict['components']['extra_features_loss']
             
             if batch_idx % 10 == 0:
-                extra_info = ""
-                if self.use_extra_features and 'extra_features_loss' in loss_dict['components']:
-                    extra_info = f", ExtraFeat={loss_dict['components']['extra_features_loss']:.4f}"
+                if hasattr(self, 'balanced_training') and self.balanced_training:
+                    structure_loss = loss_dict.get('structure_loss', 0)
+                    feature_loss = loss_dict.get('feature_loss', 0)
+                    print(f'Batch {batch_idx}: Total={loss_dict["total_loss"].item():.1f}, '
+                          f'Structure={structure_loss:.1f}, '
+                          f'Features={feature_loss:.1f}, '
+                          f'KL={loss_dict["kl_loss"].item():.1f}, Beta={beta:.4f}')
+                else:
+                    extra_info = ""
+                    if self.use_extra_features and 'extra_features_loss' in loss_dict['components']:
+                        extra_info = f", ExtraFeat={loss_dict['components']['extra_features_loss']:.4f}"
                 
-                print(f'Batch {batch_idx}: Loss={loss_dict["total_loss"].item():.4f}, '
-                      f'Recon={loss_dict["reconstruction_loss"].item():.4f}, '
-                      f'KL={loss_dict["kl_loss"].item():.4f}{extra_info}, Beta={beta:.4f}')
+                    print(f'Batch {batch_idx}: Loss={loss_dict["total_loss"].item():.4f}, '
+                          f'Recon={loss_dict["reconstruction_loss"].item():.4f}, '
+                          f'KL={loss_dict["kl_loss"].item():.4f}{extra_info}, Beta={beta:.4f}')
         
         return {
             'total_loss': total_loss / len(dataloader),
             'reconstruction_loss': total_recon_loss / len(dataloader),
             'kl_loss': total_kl_loss / len(dataloader),
-            'extra_features_loss': total_extra_feat_loss / len(dataloader) if self.use_extra_features else 0
-        }
+            'extra_features_loss': total_extra_feat_loss / len(dataloader) if self.use_extra_features else 0}
 
 
 # Utility functions for creating flexible models
