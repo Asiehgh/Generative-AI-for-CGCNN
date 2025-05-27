@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from data import collate_pool
+from balanced_vae_model import BalancedCrystalGraphVAE, balanced_vae_loss_function
 
 
 # Import flexible modules
@@ -29,9 +30,7 @@ from flexible_data_loader import (
     flexible_collate_pool, 
     get_dataset_info
 )
-
 from data import get_train_val_test_loader
-
 
 def main():
     parser = argparse.ArgumentParser(description='Flexible Crystal Graph VAE Training')
@@ -90,6 +89,13 @@ def main():
     parser.add_argument('--save-dir', default='./flexible_vae_checkpoints',
                         help='Directory to save model checkpoints')
     
+    parser.add_argument('--structure-weight', default=1.0, type=float,
+                        help='Weight for structure reconstruction loss')
+    parser.add_argument('--feature-weight', default=1.0, type=float,
+                        help='Weight for feature reconstruction loss')
+    parser.add_argument('--balanced-training', action='store_true',
+                        help='Use balanced structure + feature training')
+    
     # Generation arguments
     parser.add_argument('--generate-samples', default=0, type=int,
                         help='Number of samples to generate after training')
@@ -147,16 +153,34 @@ def main():
     print("\n" + "="*60)
     print("MODEL CREATION")
     print("="*60)
-    
-    model = create_flexible_vae_model(
-        dataset=dataset,
-        latent_dim=args.latent_dim,
-        device=device,
-        atom_fea_len=args.atom_fea_len,
-        n_conv=args.n_conv,
-        h_fea_len=args.h_fea_len
-    )
-    
+  
+
+    if args.balanced_training:
+        print("Using Balanced CGCNN + Features VAE")
+        model = BalancedCrystalGraphVAE(
+            orig_atom_fea_len=dataset_info['atom_feature_dim'],
+            nbr_fea_len=dataset_info['bond_feature_dim'],
+            atom_fea_len=args.atom_fea_len,
+            n_conv=args.n_conv,
+            h_fea_len=args.h_fea_len,
+            n_extra_features=dataset_info['num_extra_features'],
+            latent_dim=args.latent_dim,
+            max_atoms=200,
+            use_extra_features=dataset_info['has_extra_features'],
+            structure_weight=args.structure_weight,
+            feature_weight=args.feature_weight
+        )
+    else:
+        print("Using Original Flexible VAE")
+        model = create_flexible_vae_model(
+            dataset=dataset,
+            latent_dim=args.latent_dim,
+            device=device,
+            atom_fea_len=args.atom_fea_len,
+            n_conv=args.n_conv,
+            h_fea_len=args.h_fea_len
+        )
+   
     # Print model summary
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -183,7 +207,11 @@ def main():
         beta_schedule=beta_schedule,
         use_extra_features=model.use_extra_features
     )
-    
+    if args.balanced_training:
+        trainer.balanced_training = True
+        trainer.structure_weight = args.structure_weight
+        trainer.feature_weight = args.feature_weight
+   
     # Training configuration summary
     print("\n" + "="*60)
     print("TRAINING CONFIGURATION")
