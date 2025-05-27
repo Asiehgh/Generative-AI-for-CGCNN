@@ -13,22 +13,14 @@ Basic Usage (Any Dataset with CGCNN):
 
     python train_generative_cgcnn.py ./data/StructureData/ --structure-only
 
-    python flexible_vae_training.py ./data/MyData/ \
-    
+    python flexible_vae_training.py ./data/MyData/ \    
     --feature-file ./data/MyData/features.csv \
-    
     --balanced-training \
-    
     --structure-weight 1.0 \
-    
     --feature-weight 1.0 \
-    
     --lr 0.0001 \
-    
     --batch-size 32 \
-    
     --beta-max 0.5 \
-    
     --epochs 150 
 
 
