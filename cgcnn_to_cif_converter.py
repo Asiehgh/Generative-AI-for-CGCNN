@@ -34,7 +34,7 @@ class EnhancedCGCNNReversal:
         self.data_dir = data_dir
         
         # Extract exact parameters from your model
-        print("🔍 Extracting exact parameters from your CGCNN model...")
+        print(" Extracting exact parameters from your CGCNN model...")
         self.extractor = CGCNNParameterExtractor(model_path, data_dir)
         self.params = self.extractor.extract_all_parameters()
         
@@ -599,8 +599,8 @@ class EnhancedCGCNNReversal:
     
     def convert_all_samples_exact(self, generated_samples_path, output_dir='./exact_cgcnn_structures'):
         """Convert all samples using exact CGCNN reversal"""
-        print("🚀 EXACT CGCNN REVERSAL - Using YOUR Model Parameters!")
-        print(f"📊 Radius: {self.radius} Å, Elements: {len(self.available_elements)}")
+        print(" EXACT CGCNN REVERSAL - Using YOUR Model Parameters!")
+        print(f" Radius: {self.radius} Å, Elements: {len(self.available_elements)}")
         
         # Load generated data
         generated_data = torch.load(generated_samples_path, map_location='cpu')
@@ -642,7 +642,7 @@ class EnhancedCGCNNReversal:
 def main():
     """Main function - uses YOUR exact CGCNN parameters"""
     
-    print("🚀 EXACT CGCNN REVERSAL - Zero Assumptions, Perfect Parameters!")
+    print(" EXACT CGCNN REVERSAL - Zero Assumptions, Perfect Parameters!")
     
     # Initialize with your model
     reverser = EnhancedCGCNNReversal(
