@@ -25,7 +25,7 @@ class CGCNNParameterExtractor:
         
     def extract_all_parameters(self) -> Dict[str, Any]:
         """Extract all CGCNN parameters from model and dataset"""
-        print("🔍 Extracting EXACT CGCNN parameters (no assumptions)...")
+        print(" Extracting EXACT CGCNN parameters (no assumptions)...")
         
         # 1. Extract from model checkpoint
         model_params = self.extract_from_model_checkpoint()
@@ -58,7 +58,7 @@ class CGCNNParameterExtractor:
     
     def extract_from_model_checkpoint(self) -> Dict[str, Any]:
         """Extract parameters directly from model checkpoint"""
-        print("📦 Analyzing model checkpoint...")
+        print(" Analyzing model checkpoint...")
         
         try:
             checkpoint = torch.load(self.model_path, map_location='cpu')
@@ -89,11 +89,11 @@ class CGCNNParameterExtractor:
                 model_state = checkpoint['model_state_dict']
                 params.update(self.analyze_model_state(model_state))
             
-            print(f"✅ Extracted {len(params)} parameters from checkpoint")
+            print(f" Extracted {len(params)} parameters from checkpoint")
             return params
             
         except Exception as e:
-            print(f"⚠️  Could not extract from checkpoint: {e}")
+            print(f"  Could not extract from checkpoint: {e}")
             return {}
     
     def analyze_model_state(self, model_state: Dict) -> Dict[str, Any]:
@@ -128,7 +128,7 @@ class CGCNNParameterExtractor:
     
     def extract_from_dataset(self) -> Dict[str, Any]:
         """Extract parameters from dataset files"""
-        print("📊 Analyzing dataset configuration...")
+        print(" Analyzing dataset configuration...")
         
         params = {}
         
@@ -155,16 +155,16 @@ class CGCNNParameterExtractor:
                         k: v for k, v in config.items() 
                         if k in ['radius', 'max_num_nbr', 'dmin', 'dmax', 'step']
                     })
-                    print(f"✅ Found config in {config_file}")
+                    print(f" Found config in {config_file}")
                     
                 except Exception as e:
-                    print(f"⚠️  Could not read {config_file}: {e}")
+                    print(f"  Could not read {config_file}: {e}")
         
         return params
     
     def extract_from_dataloader_config(self) -> Dict[str, Any]:
         """Try to infer dataloader parameters from dataset structure"""
-        print("🔄 Inferring dataloader parameters...")
+        print(" Inferring dataloader parameters...")
         
         params = {}
         
@@ -181,7 +181,7 @@ class CGCNNParameterExtractor:
                 params.update(self.infer_from_sample_structure(sample_file))
             
         except Exception as e:
-            print(f"⚠️  Could not analyze sample structures: {e}")
+            print(f"  Could not analyze sample structures: {e}")
         
         return params
     
@@ -208,16 +208,16 @@ class CGCNNParameterExtractor:
                 'typical_bond_length': max_cutoff
             }
             
-            print(f"✅ Inferred radius: {inferred_radius:.2f} Å from structure analysis")
+            print(f" Inferred radius: {inferred_radius:.2f} Å from structure analysis")
             return params
             
         except Exception as e:
-            print(f"⚠️  Could not analyze structure {cif_file}: {e}")
+            print(f"  Could not analyze structure {cif_file}: {e}")
             return {}
     
     def analyze_atom_initialization(self) -> Dict[str, Any]:
         """Analyze atom_init.json to understand atom feature encoding"""
-        print("🧬 Analyzing atom initialization...")
+        print(" Analyzing atom initialization...")
         
         params = {}
         
@@ -227,7 +227,7 @@ class CGCNNParameterExtractor:
         atom_init_path = os.path.join(self.data_dir, 'atom_init.json')
         
         if not os.path.exists(atom_init_path):
-            print("⚠️  atom_init.json not found")
+            print("  atom_init.json not found")
             return params
         
         try:
@@ -255,17 +255,17 @@ class CGCNNParameterExtractor:
                 'max': np.max(all_features, axis=0).tolist()
             }
             
-            print(f"✅ Found {len(atomic_numbers)} element types with {feature_lengths[0]}-D features")
+            print(f" Found {len(atomic_numbers)} element types with {feature_lengths[0]}-D features")
             
             return params
             
         except Exception as e:
-            print(f"⚠️  Could not analyze atom_init.json: {e}")
+            print(f"  Could not analyze atom_init.json: {e}")
             return {}
     
     def infer_gaussian_distance_parameters(self) -> Dict[str, Any]:
         """Infer Gaussian distance expansion parameters"""
-        print("📏 Inferring Gaussian distance parameters...")
+        print(" Inferring Gaussian distance parameters...")
         
         params = {}
         
@@ -286,7 +286,7 @@ class CGCNNParameterExtractor:
             expected_centers = int((dmax - dmin) / step) + 1
             
             if expected_centers != bond_feature_dim:
-                print(f"🔧 Adjusting Gaussian parameters to match bond features...")
+                print(f" Adjusting Gaussian parameters to match bond features...")
                 print(f"   Expected centers: {expected_centers}, Actual bond features: {bond_feature_dim}")
                 
                 # Adjust step to match bond feature dimension
@@ -301,12 +301,12 @@ class CGCNNParameterExtractor:
             'gaussian_variance': step  # Common choice: variance = step
         })
         
-        print(f"✅ Gaussian parameters: dmin={dmin}, dmax={dmax:.1f}, step={step:.3f}")
+        print(f" Gaussian parameters: dmin={dmin}, dmax={dmax:.1f}, step={step:.3f}")
         return params
     
     def validate_parameters(self):
         """Validate that extracted parameters are consistent"""
-        print("✅ Validating parameter consistency...")
+        print(" Validating parameter consistency...")
         
         # Check atom feature dimensions
         atom_dim_checkpoint = self.parameters.get('atom_feature_dim')
@@ -315,7 +315,7 @@ class CGCNNParameterExtractor:
         
         if atom_dim_checkpoint and atom_dim_inferred:
             if atom_dim_checkpoint != atom_dim_inferred:
-                print(f"⚠️  Atom feature dimension mismatch: "
+                print(f"  Atom feature dimension mismatch: "
                       f"checkpoint={atom_dim_checkpoint}, inferred={atom_dim_inferred}")
         
         # Check bond feature dimensions
@@ -325,7 +325,7 @@ class CGCNNParameterExtractor:
         
         if bond_dim_checkpoint and gaussian_centers:
             if bond_dim_checkpoint != gaussian_centers:
-                print(f"⚠️  Bond feature dimension mismatch: "
+                print(f"  Bond feature dimension mismatch: "
                       f"checkpoint={bond_dim_checkpoint}, gaussian={gaussian_centers}")
         
         # Validate radius parameters
@@ -336,7 +336,7 @@ class CGCNNParameterExtractor:
         radius_values = [r for r in radius_values if r is not None]
         
         if len(radius_values) > 1 and not all(abs(r - radius_values[0]) < 0.5 for r in radius_values):
-            print(f"⚠️  Radius values inconsistent: {radius_values}")
+            print(f"  Radius values inconsistent: {radius_values}")
     
     def save_extracted_parameters(self):
         """Save extracted parameters for future use"""
@@ -356,10 +356,10 @@ class CGCNNParameterExtractor:
             with open(output_file, 'w') as f:
                 json.dump(json_params, f, indent=2)
             
-            print(f"💾 Saved extracted parameters to: {output_file}")
+            print(f" Saved extracted parameters to: {output_file}")
             
         except Exception as e:
-            print(f"⚠️  Could not save parameters: {e}")
+            print(f"  Could not save parameters: {e}")
     
     def get_parameter(self, param_name: str, default=None):
         """Get parameter with fallback logic"""
@@ -383,28 +383,28 @@ class CGCNNParameterExtractor:
     def print_summary(self):
         """Print a comprehensive summary of extracted parameters"""
         print("\n" + "="*60)
-        print("📋 EXTRACTED CGCNN PARAMETERS SUMMARY")
+        print(" EXTRACTED CGCNN PARAMETERS SUMMARY")
         print("="*60)
         
         # Model Architecture
-        print("\n🏗️  Model Architecture:")
+        print("\n  Model Architecture:")
         print(f"  Latent dimension: {self.get_parameter('latent_dim', 'Unknown')}")
         print(f"  Use extra features: {self.get_parameter('use_extra_features', 'Unknown')}")
         print(f"  Number of extra features: {self.get_parameter('n_extra_features', 'Unknown')}")
         
         # Atom Features
-        print("\n🧬 Atom Features:")
+        print("\n Atom Features:")
         print(f"  Atom feature dimension: {self.get_parameter('atom_feature_dim', 'Unknown')}")
         print(f"  Available elements: {len(self.get_parameter('available_elements', []))}")
         print(f"  Element types: {self.get_parameter('available_elements', 'Unknown')}")
         
         # Graph Construction
-        print("\n🔗 Graph Construction:")
+        print("\n Graph Construction:")
         print(f"  Radius: {self.get_parameter('radius', 'Unknown')} Å")
         print(f"  Max neighbors: {self.get_parameter('training_max_neighbors', 'Unknown')}")
         
         # Gaussian Distance Expansion  
-        print("\n📏 Gaussian Distance Expansion:")
+        print("\n Gaussian Distance Expansion:")
         print(f"  dmin: {self.get_parameter('dmin', 'Unknown')}")
         print(f"  dmax: {self.get_parameter('dmax', 'Unknown')}")
         print(f"  step: {self.get_parameter('step', 'Unknown')}")
@@ -412,7 +412,7 @@ class CGCNNParameterExtractor:
         
         # Extra Features
         if self.get_parameter('use_extra_features'):
-            print("\n🎯 Extra Features:")
+            print("\n Extra Features:")
             feature_names = self.get_parameter('feature_names', [])
             print(f"  Number: {len(feature_names)}")
             if feature_names:
@@ -425,7 +425,7 @@ def enhance_cgcnn_reversal(model_path: str, data_dir: str = None):
     """
     Main function to extract parameters and enhance CGCNN reversal
     """
-    print("🚀 ENHANCING CGCNN REVERSAL WITH EXTRACTED PARAMETERS")
+    print(" ENHANCING CGCNN REVERSAL WITH EXTRACTED PARAMETERS")
     
     # Extract parameters
     extractor = CGCNNParameterExtractor(model_path, data_dir)
