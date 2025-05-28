@@ -210,15 +210,11 @@ class BalancedCrystalGraphVAE(nn.Module):
         pos_encoding = pos_encoding / max_atoms_in_batch
         
         # Decode atom features
-        atom_features = self.structure_decoder(
-            expanded_structure.view(-1, expanded_structure.size(2))
-        )
+        atom_features = self.structure_decoder(expanded_structure.reshape(-1, expanded_structure.size(2)))
         atom_features = atom_features.view(batch_size, max_atoms_in_batch, -1)
         
         # Decode atom types (crucial for CGCNN)
-        atom_types = self.atom_type_decoder(
-            atom_features.view(-1, atom_features.size(2))
-        )
+        atom_types = self.atom_type_decoder(atom_features.reshape(-1, atom_features.size(2)))
         atom_types = atom_types.view(batch_size, max_atoms_in_batch, -1)
         
         # Generate bond features
@@ -341,17 +337,17 @@ def balanced_vae_loss_function(output, original_inputs, beta=1.0,
         atom_recon_loss = 0
         for i, idx_map in enumerate(crystal_atom_idx):
             if i < reconstructed['atom_types'].size(0):
-                # Compare original vs reconstructed atom features
                 orig_atoms = original_atom_fea[idx_map]
                 recon_atoms = reconstructed['atom_types'][i][:len(idx_map)]
-                
-                if orig_atoms.size(-1) == recon_atoms.size(-1):
-                    atom_recon_loss += F.mse_loss(recon_atoms, orig_atoms, reduction='sum')
+                min_atoms = min(orig_atoms.size(0), recon_atoms.size(0))                
+                if min_atoms > 0 and orig_atoms.size(-1) == recon_atoms.size(-1):
+                    orig_atoms_trimmed = orig_atoms[:min_atoms]
+                    recon_atoms_trimmed = recon_atoms[:min_atoms]
+                    atom_recon_loss += F.mse_loss(recon_atoms_trimmed, orig_atoms_trimmed, reduction='sum')
         
         structure_loss += atom_recon_loss
         loss_components['atom_reconstruction'] = atom_recon_loss.item()
-    
-    # 2. Crystal Structure Consistency Loss
+
     if 'num_atoms' in reconstructed:
         # Penalty for unrealistic atom counts
         num_atoms = reconstructed['num_atoms'].float()
