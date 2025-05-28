@@ -75,7 +75,7 @@ class EnhancedCGCNNReversal:
             print("  No atom_init.json - falling back to dataset analysis")
             return self._infer_elements_from_dataset(atom_features)
         
-        print(f"🧬 Decoding {num_atoms} atoms using YOUR atom_init.json...")
+        print(f" Decoding {num_atoms} atoms using YOUR atom_init.json...")
         
         # For each generated atom feature vector, find best match
         for i in range(num_atoms):
@@ -172,7 +172,7 @@ class EnhancedCGCNNReversal:
         if torch.is_tensor(bond_features):
             bond_features = bond_features.cpu().numpy()
         
-        print(f"🔗 Reconstructing bonds using YOUR parameters (radius={self.radius})")
+        print(f" Reconstructing bonds using YOUR parameters (radius={self.radius})")
         
         # CGCNN creates neighbors within radius - reconstruct this
         neighbor_list = []
