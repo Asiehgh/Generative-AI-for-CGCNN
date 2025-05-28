@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import numpy as np
 from model import ConvLayer  # Your existing CGCNN ConvLayer
 from data import collate_pool
+from balanced_vae_model import balanced_vae_loss_function
 
 class FlexibleCrystalGraphVAE(nn.Module):
     """
@@ -571,12 +572,20 @@ class FlexibleVAETrainer:
             
             # Accumulate losses
             total_loss += loss_dict['total_loss'].item()
-            total_recon_loss += loss_dict['reconstruction_loss'].item()
-            total_kl_loss += loss_dict['kl_loss'].item()
-            
-            if 'extra_features_loss' in loss_dict['components']:
-                total_extra_feat_loss += loss_dict['components']['extra_features_loss']
-            
+            if hasattr(self, 'balanced_training') and self.balanced_training:
+                total_recon_loss += (loss_dict.get('structure_loss', 0) + loss_dict.get('feature_loss', 0))
+            if isinstance(total_recon_loss, torch.Tensor):
+                total_recon_loss = total_recon_loss.item()
+            total_extra_feat_loss += loss_dict.get('feature_loss', 0)
+            if isinstance(total_extra_feat_loss, torch.Tensor):
+                total_extra_feat_loss = total_extra_feat_loss.item()
+            else:
+                total_recon_loss += loss_dict['reconstruction_loss'].item()
+                if 'extra_features_loss' in loss_dict['components']:
+                    total_extra_feat_loss += loss_dict['components']['extra_features_loss']
+                total_kl_loss += loss_dict['kl_loss'].item()
+ 
+           
             if batch_idx % 10 == 0:
                 if hasattr(self, 'balanced_training') and self.balanced_training:
                     structure_loss = loss_dict.get('structure_loss', 0)
