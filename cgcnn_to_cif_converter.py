@@ -49,7 +49,7 @@ class EnhancedCGCNNReversal:
         self.atom_init = self.params.get('atom_init_data', {})
         self.available_elements = self.params.get('available_elements', [])
         
-        print(f"✅ Using YOUR exact parameters:")
+        print(f"  Using YOUR exact parameters:")
         print(f"   Radius: {self.radius} Å")
         print(f"   Gaussian: dmin={self.dmin}, dmax={self.dmax}, step={self.step:.4f}")
         print(f"   Available elements: {len(self.available_elements)}")
@@ -72,7 +72,7 @@ class EnhancedCGCNNReversal:
         confidence_scores = []
         
         if not self.atom_init:
-            print("⚠️  No atom_init.json - falling back to dataset analysis")
+            print("  No atom_init.json - falling back to dataset analysis")
             return self._infer_elements_from_dataset(atom_features)
         
         print(f"🧬 Decoding {num_atoms} atoms using YOUR atom_init.json...")
@@ -123,8 +123,8 @@ class EnhancedCGCNNReversal:
             element_counts[symbol] = element_counts.get(symbol, 0) + 1
         
         avg_confidence = np.mean(confidence_scores)
-        print(f"🎯 Decoded elements: {element_counts}")
-        print(f"📊 Average confidence: {avg_confidence:.3f}")
+        print(f" Decoded elements: {element_counts}")
+        print(f" Average confidence: {avg_confidence:.3f}")
         
         return element_symbols, atomic_numbers, confidence_scores
     
@@ -141,7 +141,7 @@ class EnhancedCGCNNReversal:
         # Adjust if feature length doesn't match (handle any inconsistencies)
         if len(gaussian_features) != len(distance_centers):
             distance_centers = np.linspace(self.dmin, self.dmax, len(gaussian_features))
-            print(f"🔧 Adjusted distance centers to match feature length: {len(gaussian_features)}")
+            print(f" Adjusted distance centers to match feature length: {len(gaussian_features)}")
         
         # Decode using weighted average (more robust than just peak)
         weights = np.array(gaussian_features)
@@ -165,7 +165,7 @@ class EnhancedCGCNNReversal:
         Reconstruct neighbor list using YOUR exact bond feature interpretation
         """
         if not generated_bond_features or len(generated_bond_features) == 0:
-            print("⚠️  No bond features - creating connectivity based on your radius")
+            print("  No bond features - creating connectivity based on your radius")
             return self._create_connectivity_from_radius(num_atoms)
         
         bond_features = generated_bond_features[0]  # First batch
@@ -218,7 +218,7 @@ class EnhancedCGCNNReversal:
         # Print connectivity statistics
         total_bonds_found = sum(len(neighbors) for neighbors in neighbor_list)
         avg_coordination = total_bonds_found / num_atoms if num_atoms > 0 else 0
-        print(f"📊 Reconstructed connectivity: {total_bonds_found//2} bonds, avg coord: {avg_coordination:.1f}")
+        print(f" Reconstructed connectivity: {total_bonds_found//2} bonds, avg coord: {avg_coordination:.1f}")
         
         return neighbor_list, neighbor_distances
     
@@ -259,7 +259,7 @@ class EnhancedCGCNNReversal:
         if num_atoms == 1:
             return np.array([[0.0, 0.0, 0.0]])
         
-        print(f"📐 Generating 3D coordinates using YOUR parameters...")
+        print(f" Generating 3D coordinates using YOUR parameters...")
         
         # Build distance matrix from neighbor information
         distance_matrix = np.full((num_atoms, num_atoms), np.inf)
@@ -319,12 +319,12 @@ class EnhancedCGCNNReversal:
             coords_3d = mds.fit_transform(distance_matrix)
             
             embedding_stress = mds.stress_
-            print(f"✅ MDS embedding successful (stress: {embedding_stress:.6f})")
+            print(f" MDS embedding successful (stress: {embedding_stress:.6f})")
             
             return coords_3d
             
         except Exception as e:
-            print(f"⚠️  MDS failed: {e}. Using eigenvalue embedding...")
+            print(f"  MDS failed: {e}. Using eigenvalue embedding...")
             return self._eigenvalue_embedding(distance_matrix)
     
     def _eigenvalue_embedding(self, distance_matrix):
@@ -348,11 +348,11 @@ class EnhancedCGCNNReversal:
             # Create 3D embedding
             coords_3d = eigenvecs[:, :3] @ np.diag(np.sqrt(np.maximum(eigenvals[:3], 0)))
             
-            print("✅ Eigenvalue embedding successful")
+            print(" Eigenvalue embedding successful")
             return coords_3d
             
         except Exception as e:
-            print(f"⚠️  Eigenvalue embedding failed: {e}. Using random layout...")
+            print(f"  Eigenvalue embedding failed: {e}. Using random layout...")
             return np.random.randn(len(distance_matrix), 3) * 5.0
     
     def _refine_coordinates_exact(self, initial_coords, neighbor_list, neighbor_distances, element_symbols):
@@ -417,14 +417,14 @@ class EnhancedCGCNNReversal:
             refined_coords = result.x.reshape(-1, 3)
             
             if result.success:
-                print(f"✅ Coordinate refinement successful (final error: {result.fun:.6f})")
+                print(f" Coordinate refinement successful (final error: {result.fun:.6f})")
             else:
-                print(f"⚠️  Optimization completed with warnings: {result.message}")
+                print(f"  Optimization completed with warnings: {result.message}")
             
             return refined_coords
             
         except Exception as e:
-            print(f"⚠️  Coordinate refinement failed: {e}")
+            print(f"  Coordinate refinement failed: {e}")
             return initial_coords
     
     def _center_and_orient_structure(self, coords, element_symbols):
@@ -438,9 +438,9 @@ class EnhancedCGCNNReversal:
                 # PCA for orientation
                 _, _, Vt = np.linalg.svd(coords - np.mean(coords, axis=0))
                 coords = coords @ Vt.T
-                print("✅ Structure oriented using PCA")
+                print(" Structure oriented using PCA")
             except:
-                print("⚠️  Could not orient structure - keeping original orientation")
+                print("  Could not orient structure - keeping original orientation")
         
         return coords
     
@@ -452,7 +452,7 @@ class EnhancedCGCNNReversal:
         os.makedirs(output_dir, exist_ok=True)
         
         try:
-            print(f"\n🎯 EXACT CGCNN Reversal - Sample {sample_id}")
+            print(f"\n EXACT CGCNN Reversal - Sample {sample_id}")
             print(f"Using YOUR parameters: radius={self.radius}, elements={len(self.available_elements)}")
             
             # Step 1: Extract number of atoms
@@ -460,7 +460,7 @@ class EnhancedCGCNNReversal:
             if torch.is_tensor(num_atoms):
                 num_atoms = int(num_atoms.item() if num_atoms.dim() == 0 else num_atoms[0].item())
             
-            print(f"🔢 Number of atoms: {num_atoms}")
+            print(f" Number of atoms: {num_atoms}")
             
             # Step 2: Decode atom features using YOUR atom_init.json
             atom_features = generated_sample.get('atom_types')
@@ -472,7 +472,7 @@ class EnhancedCGCNNReversal:
                     atom_features[:num_atoms]
                 )
             else:
-                print("⚠️  No atom features - using most common element from your dataset")
+                print("  No atom features - using most common element from your dataset")
                 most_common_element = self.available_elements[0] if self.available_elements else 'C'
                 element_symbols = [most_common_element] * num_atoms
                 atomic_numbers = [atomic_numbers.get(most_common_element, 6)] * num_atoms
@@ -514,11 +514,11 @@ class EnhancedCGCNNReversal:
                 neighbor_list, coords_3d, confidence, cell_size
             )
             
-            print(f"✅ EXACT reversal complete: {cif_filename}")
+            print(f" EXACT reversal complete: {cif_filename}")
             return cif_filename
             
         except Exception as e:
-            print(f"❌ Error in exact CGCNN reversal for sample {sample_id}: {e}")
+            print(f" Error in exact CGCNN reversal for sample {sample_id}: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -620,7 +620,7 @@ class EnhancedCGCNNReversal:
         else:
             samples = [generated_data] if isinstance(generated_data, dict) else generated_data
         
-        print(f"🎯 Processing {len(samples)} samples with EXACT reversal...")
+        print(f" Processing {len(samples)} samples with EXACT reversal...")
         
         # Print parameter summary
         self.extractor.print_summary()
@@ -631,10 +631,10 @@ class EnhancedCGCNNReversal:
             if cif_file:
                 successful += 1
         
-        print(f"\n🎉 EXACT REVERSAL COMPLETE!")
-        print(f"✅ Success rate: {successful}/{len(samples)}")
-        print(f"🎯 Used YOUR exact training parameters - no assumptions!")
-        print(f"📁 Output directory: {output_dir}")
+        print(f"\n EXACT REVERSAL COMPLETE!")
+        print(f" Success rate: {successful}/{len(samples)}")
+        print(f" Used YOUR exact training parameters - no assumptions!")
+        print(f" Output directory: {output_dir}")
         
         return successful
 
@@ -656,12 +656,12 @@ def main():
         output_dir='./exact_cgcnn_reversed_structures'
     )
     
-    print("\n🎯 EXACT CGCNN Reversal Complete!")
-    print("✅ Used YOUR exact training radius")
-    print("✅ Used YOUR exact Gaussian parameters")  
-    print("✅ Used YOUR exact atom_init.json")
-    print("✅ Used YOUR exact bond feature dimensions")
-    print("✅ Perfect reversal of YOUR specific model!")
+    print("\n EXACT CGCNN Reversal Complete!")
+    print(" Used YOUR exact training radius")
+    print(" Used YOUR exact Gaussian parameters")  
+    print(" Used YOUR exact atom_init.json")
+    print(" Used YOUR exact bond feature dimensions")
+    print(" Perfect reversal of YOUR specific model!")
 
 
 if __name__ == '__main__':
